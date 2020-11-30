@@ -1,12 +1,12 @@
 {
-  "name": "AoC-2019",
+  "name": "AoC-2020",
   "version": "1.0.0",
-  "description": "Advent of Code 2019",
+  "description": "Advent of Code 2020",
   "main": "index.js",
   "engines": {
     "node": ">=14.15.0"
   },
-  "repository": "https://github.com/josepot/AoC-2019",
+  "repository": "https://github.com/josepot/AoC-2020",
   "author": "Josep M Sobrepere",
   "license": "MIT",
   "dependencies": {
