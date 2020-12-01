@@ -1,24 +1,13 @@
-const solution1 = (lines: string[]) => {
-  const entries = lines.map(Number)
+import { tupleCombinations } from "utils/tupleCombinations"
 
-  for (let i = 0; i < entries.length; i++) {
-    for (let z = i + 1; z < entries.length; z++) {
-      if (entries[i] + entries[z] === 2020) return entries[i] * entries[z]
-    }
-  }
-}
+const solution1 = (lines: string[]) =>
+  tupleCombinations(lines.map(Number), (a, b) => a + b === 2020)!.reduce(
+    (a, b) => a * b,
+  )
 
-const solution2 = (lines: string[]) => {
-  const entries = lines.map(Number)
-
-  for (let i = 0; i < entries.length; i++) {
-    for (let z = i + 1; z < entries.length; z++) {
-      for (let zz = z + 1; zz < entries.length; zz++) {
-        if (entries[i] + entries[z] + entries[zz] === 2020)
-          return entries[i] * entries[z] * entries[zz]
-      }
-    }
-  }
-}
+const solution2 = (lines: string[]) =>
+  tupleCombinations(lines.map(Number), (a, b, c) => a + b + c === 2020)!.reduce(
+    (a, b) => a * b,
+  )
 
 export default [solution1, solution2]
