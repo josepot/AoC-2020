@@ -1,13 +1,14 @@
-import add from "utils/add"
 import { linesMapper } from "utils/linesMapper"
 import { multiply } from "utils/multiply"
 
 const lineMapper = (line: string) => line.split("").map((x) => x === "#")
 
-const solution1 = linesMapper(lineMapper, (grid) => {
-  return grid.slice(1).filter((current, idx) => current[((idx + 1) * 3) % 31])
-    .length
-})
+const solution1 = linesMapper(
+  lineMapper,
+  (grid) =>
+    grid.slice(1).filter((row, idx) => row[((idx + 1) * 3) % row.length])
+      .length,
+)
 
 const solution2 = linesMapper(lineMapper, (grid) => {
   const deltas = [
@@ -21,13 +22,11 @@ const solution2 = linesMapper(lineMapper, (grid) => {
   return deltas
     .map(
       ([xDelta, yDelta]) =>
-        grid.slice(yDelta).filter((current, idx) => {
+        grid.slice(yDelta).filter((row, idx) => {
           if (idx % yDelta === 1) return false
-          const i = idx / yDelta
-          return current[((i + 1) * xDelta) % 31]
+          return row[((idx / yDelta + 1) * xDelta) % row.length]
         }).length,
     )
     .reduce(multiply)
 })
 export default [solution1, solution2]
-// export default [solution1]
