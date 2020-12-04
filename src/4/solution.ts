@@ -1,7 +1,3 @@
-import { linesMapper } from "utils/linesMapper"
-
-const lineMapper = (line: string) => line
-
 const fields: Record<string, (val: string) => boolean> = {
   byr: (x) => {
     const val = Number(x)
@@ -48,13 +44,12 @@ const fields: Record<string, (val: string) => boolean> = {
   cid: () => true,
 }
 
-const solution1 = linesMapper(lineMapper, (lines) => {
+const getPassports = (lines: string[]) => {
   let rawPassports: string[] = []
   let [current] = lines
   current += " "
   lines.slice(1).forEach((line) => {
     if (line.length === 0) {
-      console.log(current)
       rawPassports.push(current)
       current = ""
     }
@@ -64,43 +59,10 @@ const solution1 = linesMapper(lineMapper, (lines) => {
   if (current) {
     rawPassports.push(current)
   }
-  const passports = rawPassports.map((rawPass) =>
-    Object.fromEntries(
-      rawPass
-        .split(" ")
-        .filter(Boolean)
-        .map((fieldVal) => {
-          const [field, val] = fieldVal.split(":")
-          return [field, val]
-        }),
-    ),
-  )
-  const isValid = (pass: Record<string, string>) => {
-    pass.cid = "whatever"
-    return Object.keys(pass).filter((key) => fields[key]).length >= 8
-  }
-  return passports.filter(isValid).length
-})
 
-const solution2 = linesMapper(lineMapper, (lines) => {
-  let rawPassports: string[] = []
-  let [current] = lines
-  current += " "
-  lines.slice(1).forEach((line) => {
-    if (line.length === 0) {
-      console.log(current)
-      rawPassports.push(current)
-      current = ""
-    }
-    current += line
-    current += " "
-  })
-  if (current) {
-    rawPassports.push(current)
-  }
-  const passports = rawPassports.map((rawPass) =>
+  return rawPassports.map((rawPass) =>
     Object.fromEntries(
-      rawPass
+      (rawPass + " cid:whatever")
         .split(" ")
         .filter(Boolean)
         .map((fieldVal) => {
@@ -109,14 +71,18 @@ const solution2 = linesMapper(lineMapper, (lines) => {
         }),
     ),
   )
-  const isValid = (pass: Record<string, string>) => {
-    pass.cid = "whatever"
-    return (
+}
+
+const solution1 = (lines: string[]) =>
+  getPassports(lines).filter(
+    (pass) => Object.keys(pass).filter((key) => fields[key]).length === 8,
+  ).length
+
+const solution2 = (lines: string[]) =>
+  getPassports(lines).filter(
+    (pass) =>
       Object.entries(pass).filter(([key, value]) => fields[key](value))
-        .length === 8
-    )
-  }
-  return passports.filter(isValid).length
-})
+        .length === 8,
+  ).length
 
 export default [solution1, solution2]
