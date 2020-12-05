@@ -1,74 +1,30 @@
 import { linesMapper } from "utils/linesMapper"
-import { multiply } from "utils/multiply"
 
-const getPosition = (range: number, sequence: boolean[]): number => {
-  let bottom = 0
-  let top = range
+const parseBinaryStr = (word: string, one: string) =>
+  parseInt(
+    word
+      .split("")
+      .map((c) => (c === one ? 1 : 0))
+      .join(""),
+    2,
+  )
 
-  for (let i = 0; i < sequence.length; i++) {
-    const isTop = sequence[i]
-    const delta = (top - bottom) / 2
-    if (isTop) {
-      bottom += delta
-    } else {
-      top -= delta
-    }
-    if (top - bottom === 1) {
-      return bottom
-    }
-  }
-  return Infinity
+const getId = (line: string) => {
+  const row = parseBinaryStr(line.slice(0, 7), "B")
+  const col = parseBinaryStr(line.slice(7), "R")
+  return row * 8 + col
 }
 
-const solution1 = (lines: string[]) => {
-  return lines
-    .map((line) => {
-      const row = getPosition(
-        128,
-        line
-          .slice(0, 7)
-          .split("")
-          .map((x) => x === "B"),
-      )
-      const col = getPosition(
-        8,
-        line
-          .slice(7)
-          .split("")
-          .map((x) => x === "R"),
-      )
-      return row * 8 + col
-    })
-    .reduce((a, b) => Math.max(a, b))
-}
-
-const solution2 = (lines: string[]) => {
-  const allSits = lines.map((line) => {
-    const row = getPosition(
-      128,
-      line
-        .slice(0, 7)
-        .split("")
-        .map((x) => x === "B"),
-    )
-    const col = getPosition(
-      8,
-      line
-        .slice(7)
-        .split("")
-        .map((x) => x === "R"),
-    )
-    return row * 8 + col
-  })
-
-  const min = Math.min(...allSits)
-  const max = Math.max(...allSits)
-  const sitsSet = new Set(allSits)
+const solution1 = linesMapper(getId, (ids) => Math.max(...ids))
+const solution2 = linesMapper(getId, (ids) => {
+  const min = Math.min(...ids)
+  const max = Math.max(...ids)
+  const idsSet = new Set(ids)
   for (let i = min; i < max; i++) {
-    if (sitsSet.has(i - 1) && sitsSet.has(i + 1) && !sitsSet.has(i)) {
+    if (idsSet.has(i - 1) && idsSet.has(i + 1) && !idsSet.has(i)) {
       return i
     }
   }
-}
+})
 
 export default [solution1, solution2]
