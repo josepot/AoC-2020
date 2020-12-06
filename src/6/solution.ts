@@ -1,48 +1,37 @@
 import add from "utils/add"
-import { linesMapper } from "utils/linesMapper"
 
-const mapper = (str: string) => str.split("")
-
-const solution1 = linesMapper(mapper, (lines) => {
-  const set = new Set<string>()
-  let count = 0
-
+const getGroups = (lines: string[]): string[][] => {
+  const result: string[][] = []
+  let current: string[] = []
   lines.forEach((line) => {
     if (line.length === 0) {
-      count += set.size
-      set.clear()
-    }
-    line.forEach((c) => set.add(c))
+      result.push(current)
+      current = []
+    } else current.push(line)
   })
-  count += set.size
+  if (current.length > 0) result.push(current)
+  return result
+}
 
-  return count
-})
+const solution1 = (lines: string[]) =>
+  getGroups(lines)
+    .map((group) => group.flat().join("").split(""))
+    .map((x) => new Set(x).size)
+    .reduce(add)
 
-const solution2 = linesMapper(mapper, (lines) => {
-  const set = new Map<string, number>()
-  let nParticipants = 0
-  let count = 0
-
-  lines.forEach((line) => {
-    if (line.length === 0) {
-      count += [...set.values()].filter((x) => x === nParticipants).length
-      set.clear()
-      nParticipants = 0
-      return
-    }
-    nParticipants++
-    line.forEach((c) => {
-      if (set.has(c)) {
-        set.set(c, set.get(c)! + 1)
-      } else {
-        set.set(c, 1)
-      }
+const solution2 = (lines: string[]) =>
+  getGroups(lines)
+    .map((group) => {
+      const counter: Record<string, number> = {}
+      group.forEach((answers) => {
+        answers.split("").forEach((answer) => {
+          counter[answer] = counter[answer] ?? 0
+          counter[answer]++
+        })
+      })
+      return Object.values(counter).filter((count) => count === group.length)
+        .length
     })
-  })
-  count += [...set.values()].filter((x) => x === nParticipants).length
-
-  return count
-})
+    .reduce(add)
 
 export default [solution1, solution2]
