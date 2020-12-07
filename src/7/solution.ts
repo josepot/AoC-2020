@@ -1,17 +1,16 @@
 import add from "utils/add"
 import { linesMapper } from "utils/linesMapper"
 
-const getRelations = (line: string) => {
+const getRelations = (line: string): [string, [number, string][]] => {
   const [main, otherRaw] = line.slice(0, -1).split(" bags contain ")
-  if (otherRaw.startsWith("no other bags"))
-    return [main, [] as [number, string][]] as const
+  if (otherRaw.startsWith("no other bags")) return [main, []]
   const inner = otherRaw.split(", ").map((text) => {
     const bagRaw = text.split(" ")
     const n = Number(bagRaw[0])
     const col = bagRaw.slice(1).slice(0, -1).join(" ")
-    return [n, col] as const
+    return [n, col] as [number, string]
   })
-  return [main, inner] as const
+  return [main, inner] as [string, [number, string][]]
 }
 
 const solution1 = linesMapper(getRelations, (bagRelations) => {
@@ -24,37 +23,24 @@ const solution1 = linesMapper(getRelations, (bagRelations) => {
     })
   })
 
-  const results = new Set<string>()
-  const toProcess: string[] = ["shiny gold"]
+  const getParentColors = (current: string): Set<string> =>
+    [...(map.get(current) ?? [])]
+      .map((col) => getParentColors(col).add(col))
+      .reduce(
+        (acc, current) => new Set([...acc, ...current]),
+        new Set<string>(),
+      )
 
-  while (toProcess.length > 0) {
-    const next = toProcess.pop()!
-    if (map.has(next)) {
-      map.get(next)!.forEach((x) => {
-        results.add(x)
-      })
-      toProcess.push(...[...map.get(next)!])
-    }
-  }
-  return results.size
+  return getParentColors("shiny gold").size
 })
 
 const solution2 = linesMapper(getRelations, (bagRelations) => {
-  const map = new Map<string, Map<string, number>>()
-
-  bagRelations.forEach(([main, inners]) => {
-    inners.forEach(([size, inner]) => {
-      if (!map.has(main)) map.set(main, new Map<string, number>())
-      map.get(main)!.set(inner, size)
-    })
-  })
-
-  const getInnerBags = (color: string): number => {
-    if (!map.has(color)) return 0
-    return [...map.get(color)!]
-      .map(([innerCol, innerN]) => (getInnerBags(innerCol) + 1) * innerN)
-      .reduce(add)
-  }
+  const map = new Map<string, [number, string][]>(bagRelations)
+  const getInnerBags = (color: string): number =>
+    map
+      .get(color)!
+      .map(([innerN, innerCol]) => (getInnerBags(innerCol) + 1) * innerN)
+      .reduce(add, 0)
 
   return getInnerBags("shiny gold")
 })
