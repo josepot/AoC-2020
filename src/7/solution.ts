@@ -50,14 +50,9 @@ const solution2 = linesMapper(getRelations, (bagRelations) => {
   })
 
   const getInnerBags = (color: string): number => {
-    if (!map.has(color)) {
-      return 0
-    }
+    if (!map.has(color)) return 0
     return [...map.get(color)!]
-      .map(([innerCol, innerN]) => {
-        console.log(innerCol, innerN)
-        return (getInnerBags(innerCol) + 1) * innerN
-      })
+      .map(([innerCol, innerN]) => (getInnerBags(innerCol) + 1) * innerN)
       .reduce(add)
   }
 
