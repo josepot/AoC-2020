@@ -5,36 +5,6 @@ const mapLine = (line: string) => {
   return [instruction, Number(delta)] as [string, number]
 }
 
-const solution1 = linesMapper(mapLine, (instructions: [string, number][]) => {
-  let acc = 0
-  let idx = 0
-  const runInstructions = new Set<number>()
-
-  do {
-    if (runInstructions.has(idx)) {
-      return acc
-    }
-    runInstructions.add(idx)
-    const [instruction, delta] = instructions[idx]
-    switch (instruction) {
-      case "acc": {
-        acc += delta
-        idx++
-        break
-      }
-      case "jmp": {
-        idx += delta
-        break
-      }
-      case "nop": {
-        idx++
-      }
-      default: {
-      }
-    }
-  } while (true)
-})
-
 const program = (instructions: [string, number][]) => {
   let acc = 0
   let idx = 0
@@ -66,6 +36,11 @@ const program = (instructions: [string, number][]) => {
     }
   } while (true)
 }
+
+const solution1 = linesMapper(
+  mapLine,
+  (instructions: [string, number][]) => program(instructions)[0],
+)
 
 const solution2 = linesMapper(mapLine, (instructions: [string, number][]) => {
   for (let i = 0; i < instructions.length; i++) {
