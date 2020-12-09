@@ -1,44 +1,43 @@
 import { linesMapper } from "utils/linesMapper"
 
 const isValid = (candidates: number[], input: number): boolean => {
-  for (let i = 0; i < 25; i++) {
-    for (let ii = i + 1; ii < 25; ii++) {
-      if (candidates[i] + candidates[ii] === input) return true
+  for (let first = 0; first < candidates.length; first++) {
+    for (let second = first + 1; second < candidates.length; second++) {
+      if (candidates[first] + candidates[second] === input) return true
     }
   }
   return false
 }
 
-const solution1 = linesMapper(Number, (lines: number[]) => {
+const solution1 = linesMapper(Number, (input: number[]) => {
+  const N_BUFFER = 25
   const lastNumbers: number[] = []
-  for (let i = 0; i < 25; i++) lastNumbers.push(lines[i])
 
-  for (let i = 25; i < lines.length; i++) {
-    if (!isValid(lastNumbers, lines[i])) {
-      return lines[i]
-    }
+  for (let i = 0; i < N_BUFFER; i++) lastNumbers.push(input[i])
+
+  for (let i = N_BUFFER; i < input.length; i++) {
+    const current = input[i]
+    if (!isValid(lastNumbers, current)) return input[i]
     lastNumbers.splice(0, 1)
-    lastNumbers.push(lines[i])
+    lastNumbers.push(current)
   }
 })
 
-const solution2 = linesMapper(Number, (input: number[]) => {
-  const invalid = 50047984
+const solution2 = (lines: string[]) => {
+  const invalid = solution1(lines)
+  const input = lines.map(Number)
 
-  let acc = 0
-  for (let i = 0; i < input.length; i++) {
-    acc = input[i]
-    for (let z = i + 1; acc < invalid; z++) {
-      acc += input[z]
+  let acc: number
+  for (let firstIdx = 0; firstIdx < input.length; firstIdx++) {
+    acc = input[firstIdx]
+    for (let lastIdx = firstIdx + 1; acc < invalid; lastIdx++) {
+      acc += input[lastIdx]
       if (acc === invalid) {
-        let winners: number[] = []
-        for (let zz = i; zz < z + 1; zz++) winners.push(input[zz])
-        const min = Math.min(...winners)
-        const max = Math.max(...winners)
-        return min + max
+        const winners = input.slice(firstIdx, lastIdx)
+        return Math.min(...winners) + Math.max(...winners)
       }
     }
   }
-})
+}
 
 export default [solution1, solution2]
