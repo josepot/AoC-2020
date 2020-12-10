@@ -3,7 +3,7 @@ export const range = (start: number, limit: number) =>
     .fill(null)
     .map((_, idx) => start + idx)
 
-interface LinkedListNode<T> {
+export interface LinkedListNode<T> {
   value: T
   next?: LinkedListNode<T>
 }
@@ -12,7 +12,7 @@ interface CircularLinkedListNode<T> {
   next: CircularLinkedListNode<T>
 }
 
-interface DoubleLinkedListNode<T> {
+export interface DoubleLinkedListNode<T> {
   value: T
   next?: DoubleLinkedListNode<T>
   prev?: DoubleLinkedListNode<T>
