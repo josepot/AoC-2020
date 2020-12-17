@@ -3,7 +3,7 @@ const deltas: [number, number, number][] = []
 for (let z = -1; z < 2; z++) {
   for (let x = -1; x < 2; x++) {
     for (let y = -1; y < 2; y++) {
-      deltas.push([x, y, z])
+      if (x !== 0 || y !== 0 || z !== 0) deltas.push([x, y, z])
     }
   }
 }
@@ -51,7 +51,7 @@ const nextGrid = (grid: Grid) => {
   for (let x = dimensions[0][0]; x < dimensions[0][1]; x++) {
     for (let y = dimensions[1][0]; y < dimensions[1][1]; y++) {
       for (let z = dimensions[2][0]; z < dimensions[2][1]; z++) {
-        const id = fromPosToId(z, y, z)
+        const id = fromPosToId(x, y, z)
         const nNeighActive = getNeighbours(id, grid)
         if (grid.positions.get(id)) {
           result.positions.set(id, nNeighActive === 2 || nNeighActive === 3)
@@ -67,8 +67,8 @@ const nextGrid = (grid: Grid) => {
 const solution1 = (lines: string[]) => {
   let grid: Grid = {
     dimensions: [
-      [0, 3],
-      [0, 3],
+      [0, 8],
+      [0, 8],
       [0, 1],
     ],
     positions: new Map<string, boolean>(),
@@ -83,7 +83,8 @@ const solution1 = (lines: string[]) => {
       })
   })
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
+    /*
     for (let z = grid.dimensions[2][0]; z < grid.dimensions[2][1]; z++) {
       console.log("")
       console.log("z", z)
@@ -95,6 +96,7 @@ const solution1 = (lines: string[]) => {
         console.log(line)
       }
     }
+    */
     grid = nextGrid(grid)
   }
 
