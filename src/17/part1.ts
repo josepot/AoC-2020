@@ -8,81 +8,49 @@ for (let z = -1; z < 2; z++) {
   }
 }
 
-const fromIdToPos = (id: string) => {
-  return id.split(",").map(Number) as [number, number, number]
-}
+const fromIdToPos = (id: string) =>
+  id.split(",").map(Number) as [number, number, number]
 
-const fromPosToId = (x: number, y: number, z: number) => {
-  return [x, y, z].join(",")
-}
+const fromPosToId = (x: number, y: number, z: number) => [x, y, z].join(",")
 
-interface Grid {
-  positions: Map<string, boolean>
-  dimensions: [[number, number], [number, number], [number, number]]
-}
-
-const getNeighbours = (id: string, grid: Grid) => {
+const getNeighbours = (id: string) => {
   const position = fromIdToPos(id)
-  return deltas
-    .map(
-      (delta) =>
-        grid.positions.get(
-          fromPosToId(
-            delta[0] + position[0],
-            delta[1] + position[1],
-            delta[2] + position[2],
-          ),
-        ) ?? false,
-    )
-    .filter(Boolean).length
+  return deltas.map((delta) =>
+    fromPosToId(
+      delta[0] + position[0],
+      delta[1] + position[1],
+      delta[2] + position[2],
+    ),
+  )
 }
 
-const nextGrid = (grid: Grid) => {
-  const result: Grid = {
-    dimensions: grid.dimensions.map(([min, max]) => [min - 1, max + 1]) as [
-      [number, number],
-      [number, number],
-      [number, number],
-    ],
-    positions: new Map<string, boolean>(),
-  }
-  const { dimensions } = result
+const nextGrid = (grid: Set<string>) => {
+  const result = new Set<string>()
+  const candidates = new Map<string, number>()
 
-  for (let x = dimensions[0][0]; x < dimensions[0][1]; x++) {
-    for (let y = dimensions[1][0]; y < dimensions[1][1]; y++) {
-      for (let z = dimensions[2][0]; z < dimensions[2][1]; z++) {
-        const id = fromPosToId(x, y, z)
-        const nNeighActive = getNeighbours(id, grid)
-        if (grid.positions.get(id)) {
-          result.positions.set(id, nNeighActive === 2 || nNeighActive === 3)
-        } else {
-          result.positions.set(id, nNeighActive === 3)
-        }
-      }
-    }
-  }
+  ;[...grid].forEach((id) => {
+    getNeighbours(id).forEach((neigh) => {
+      candidates.set(neigh, (candidates.get(neigh) ?? 0) + 1)
+    })
+  })
+  ;[...candidates.entries()].forEach(([id, nActive]) => {
+    if (nActive === 3 || (nActive === 2 && grid.has(id))) result.add(id)
+  })
   return result
 }
 
 export const solution1 = (lines: string[]) => {
-  let grid: Grid = {
-    dimensions: [
-      [0, lines.length],
-      [0, lines.length],
-      [0, 1],
-    ],
-    positions: new Map<string, boolean>(),
-  }
+  let grid = new Set<string>()
 
   lines.forEach((line, y) => {
     line
       .split("")
       .map((d) => d === "#")
       .forEach((isActive, x) => {
-        grid.positions.set([x, y, 0].join(","), isActive)
+        if (isActive) grid.add(fromPosToId(x, y, 0))
       })
   })
 
   for (let i = 0; i < 6; i++) grid = nextGrid(grid)
-  return [...grid.positions.values()].filter(Boolean).length
+  return grid.size
 }
