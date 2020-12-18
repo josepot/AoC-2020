@@ -39,21 +39,47 @@ const parseLine = (line: string): Group => {
       currentGroup = nextGroup
     } else if (line[i] === ")") {
       currentGroup = stack.pop()!
+      if (
+        currentGroup.operations[currentGroup.operations.length - 1] ===
+        Operation.Addition
+      ) {
+        currentGroup.operations.splice(-1)
+        const [a, b] = currentGroup.values.splice(-2)
+        currentGroup.values.push({
+          operations: [Operation.Addition],
+          values: [a, b],
+        })
+      }
     } else if (line[i] === "+") {
       currentGroup.operations.push(Operation.Addition)
     } else if (line[i] === "*") {
       currentGroup.operations.push(Operation.Multiplication)
     } else {
-      currentGroup.values.push(Number(line[i]))
+      const x = Number(line[i])
+      if (
+        currentGroup.operations[currentGroup.operations.length - 1] ===
+        Operation.Addition
+      ) {
+        currentGroup.operations.splice(-1)
+        const [a] = currentGroup.values.splice(-1)
+        currentGroup.values.push({
+          operations: [Operation.Addition],
+          values: [a, x],
+        })
+      } else {
+        currentGroup.values.push(Number(line[i]))
+      }
     }
   }
   return currentGroup
 }
 
 const solution1 = (lines: string[]) => {
+  // const testInput = "2 * 3 + (4 * 5)"
+  // return solve(parseLine(testInput))
   return lines.map(parseLine).map(solve).reduce(add)
 }
 
-const solution2 = null
+const solution2 = solution1
 
 export default [solution1, solution2].filter(Boolean)
