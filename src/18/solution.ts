@@ -10,76 +10,71 @@ interface Group {
   operations: Array<Operation>
 }
 
-const solve = (group: Group | number): number => {
-  if (typeof group === "number") return group
-  let result = solve(group.values[0])
-  group.operations.forEach((operation, idx) => {
-    const b = solve(group.values[idx + 1])
-    result = operation === Operation.Addition ? result + b : result * b
-  })
-  return result
-}
+const solve = (group: Group | number): number =>
+  typeof group === "number"
+    ? group
+    : group.values
+        .map(solve)
+        .reduce((acc, current, idx) =>
+          group.operations[idx - 1] === Operation.Addition
+            ? acc + current
+            : acc * current,
+        )
 
-const parseLine = (line: string): Group => {
+const parseLine = (part: number) => (line: string): Group => {
+  const stack = new Stack<Group>()
   let currentGroup: Group = {
     values: [],
     operations: [],
   }
-  const stack = new Stack<Group>()
   stack.push(currentGroup)
-  for (let i = 0; i < line.length; i++) {
-    if (line[i] === " ") continue
-    if (line[i] === "(") {
-      const nextGroup = {
-        values: [],
-        operations: [],
+
+  const part2Nesting =
+    part === 2
+      ? () => {
+          if (
+            currentGroup.operations[currentGroup.operations.length - 1] ===
+            Operation.Addition
+          ) {
+            currentGroup.values.push({
+              operations: currentGroup.operations.splice(-1),
+              values: currentGroup.values.splice(-2),
+            })
+          }
+        }
+      : Function.prototype
+
+  line.split("").forEach((value) => {
+    switch (value) {
+      case " ":
+        return
+      case "(": {
+        const nextGroup = {
+          values: [],
+          operations: [],
+        }
+        currentGroup.values.push(nextGroup)
+        stack.push(currentGroup)
+        return (currentGroup = nextGroup)
       }
-      currentGroup.values.push(nextGroup)
-      stack.push(currentGroup)
-      currentGroup = nextGroup
-    } else if (line[i] === ")") {
-      currentGroup = stack.pop()!
-      if (
-        currentGroup.operations[currentGroup.operations.length - 1] ===
-        Operation.Addition
-      ) {
-        currentGroup.operations.splice(-1)
-        const [a, b] = currentGroup.values.splice(-2)
-        currentGroup.values.push({
-          operations: [Operation.Addition],
-          values: [a, b],
-        })
+      case ")": {
+        currentGroup = stack.pop()!
+        return part2Nesting()
       }
-    } else if (line[i] === "+") {
-      currentGroup.operations.push(Operation.Addition)
-    } else if (line[i] === "*") {
-      currentGroup.operations.push(Operation.Multiplication)
-    } else {
-      const x = Number(line[i])
-      if (
-        currentGroup.operations[currentGroup.operations.length - 1] ===
-        Operation.Addition
-      ) {
-        currentGroup.operations.splice(-1)
-        const [a] = currentGroup.values.splice(-1)
-        currentGroup.values.push({
-          operations: [Operation.Addition],
-          values: [a, x],
-        })
-      } else {
-        currentGroup.values.push(Number(line[i]))
+      case "+":
+        return currentGroup.operations.push(Operation.Addition)
+      case "*":
+        return currentGroup.operations.push(Operation.Multiplication)
+      default: {
+        currentGroup.values.push(Number(value))
+        part2Nesting()
       }
     }
-  }
+  })
   return currentGroup
 }
 
-const solution1 = (lines: string[]) => {
-  // const testInput = "2 * 3 + (4 * 5)"
-  // return solve(parseLine(testInput))
-  return lines.map(parseLine).map(solve).reduce(add)
-}
+const solution = (part: number) => (lines: string[]) =>
+  lines.map(parseLine(part)).map(solve).reduce(add)
 
-const solution2 = solution1
-
-export default [solution1, solution2].filter(Boolean)
+export default [1, 2].map(solution)
