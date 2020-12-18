@@ -10,16 +10,11 @@ interface Group {
   operations: Array<Operation>
 }
 
-const solve = (group: Group): number => {
-  let result =
-    typeof group.values[0] === "number"
-      ? (group.values[0] as number)
-      : solve(group.values[0] as Group)
+const solve = (group: Group | number): number => {
+  if (typeof group === "number") return group
+  let result = solve(group.values[0])
   group.operations.forEach((operation, idx) => {
-    const b =
-      typeof group.values[idx + 1] === "number"
-        ? (group.values[idx + 1] as number)
-        : solve(group.values[idx + 1] as Group)
+    const b = solve(group.values[idx + 1])
     result = operation === Operation.Addition ? result + b : result * b
   })
   return result
