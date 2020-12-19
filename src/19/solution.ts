@@ -1,96 +1,50 @@
 interface Rule {
   id: number
-  solvedRules: Set<string> | null
-  rules: number[][]
+  rules: number[][] | string
 }
 
 const getRule = (line: string): Rule => {
   const [idStr, ruleRaw] = line.split(": ")
   const id = Number(idStr)
-  if (ruleRaw.startsWith('"')) {
-    return { id, solvedRules: new Set([ruleRaw.slice(1, -1)]), rules: [] }
+  return {
+    id,
+    rules: ruleRaw.startsWith('"')
+      ? ruleRaw.slice(1, -1)
+      : ruleRaw.split(" | ").map((part) => part.split(" ").map(Number)),
   }
-  const rules = ruleRaw.split(" | ").map((part) => part.split(" ").map(Number))
-  return { id, rules, solvedRules: null }
 }
 
-const solution1 = (lines: string[]) => {
-  const rulesMap = new Map<number, Rule>()
-  let stage = 0
-  const messages: string[] = []
-  lines.forEach((line) => {
-    if (line.length === 0) {
-      return stage++
-    }
-    if (stage === 0) {
-      const rule = getRule(line)
-      rulesMap.set(rule.id, rule)
-    } else {
-      messages.push(line)
-    }
-  })
+const solution = (part: number) => (lines: string[]) => {
+  const separatorIdx = lines.indexOf("")
+  const rulesMap = new Map<number, Rule>(
+    lines
+      .slice(0, separatorIdx)
+      .map(getRule)
+      .map((rule) => [rule.id, rule]),
+  )
+  const messages = lines.slice(separatorIdx + 1)
 
-  const solveRule = (id: number): Set<string> => {
-    const entry = rulesMap.get(id)!
-    if (entry.solvedRules) return entry.solvedRules!
-
-    return (entry.solvedRules = new Set(
-      entry.rules
-        .map((rules) => {
-          return rules.map(solveRule).reduce(
-            (acc, current) => {
-              const result: string[] = []
-              acc.forEach((prev) =>
-                current.forEach((next) => result.push(prev + next)),
-              )
-              return result
-            },
-            [""] as string[],
-          )
-        })
-        .flat(),
-    ))
+  if (part === 2) {
+    rulesMap.get(8)!.rules = [[42], [42, 8]]
+    rulesMap.get(11)!.rules = [
+      [42, 31],
+      [42, 11, 31],
+    ]
   }
 
-  const candidates = solveRule(0)
-
-  return messages.filter((message) => candidates.has(message)).length
-}
-
-const solution2 = (lines: string[]) => {
-  const rulesMap = new Map<number, Rule>()
-  let stage = 0
-  const messages: string[] = []
-  lines.forEach((line) => {
-    if (line.length === 0) {
-      return stage++
-    }
-    if (stage === 0) {
-      if (line.startsWith("8: 42")) {
-        line = "8: 42 | 42 8"
-      } else if (line.startsWith("11: ")) {
-        line = "11: 42 31 | 42 11 31"
-      }
-      const rule = getRule(line)
-      rulesMap.set(rule.id, rule)
-    } else {
-      messages.push(line)
-    }
-  })
-
-  const followsRule = (ids: number[], message: string): boolean => {
-    if (ids.length === 0) return message.length === 0
-    const [firstRule, ...otherRules] = ids
+  const followsRule = (message: string, ruleIds: number[]): boolean => {
+    if (ruleIds.length === 0) return message.length === 0
+    const [firstRule, ...otherRuleIds] = ruleIds
     const entry = rulesMap.get(firstRule)!
-    return entry.solvedRules
-      ? message.startsWith([...entry.solvedRules][0]) &&
-          followsRule(otherRules, message.slice(1))
+    return typeof entry.rules === "string"
+      ? message.startsWith(entry.rules) &&
+          followsRule(message.slice(1), otherRuleIds)
       : entry.rules.some((inner) =>
-          followsRule([...inner, ...otherRules], message),
+          followsRule(message, [...inner, ...otherRuleIds]),
         )
   }
 
-  return messages.filter((message) => followsRule([0], message)).length
+  return messages.filter((message) => followsRule(message, [0])).length
 }
 
-export default [solution1, solution2].filter(Boolean)
+export default [1, 2].map(solution)
