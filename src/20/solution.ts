@@ -1,3 +1,4 @@
+import { multiply } from "utils/multiply"
 import { readGrid } from "utils/readGrid"
 
 interface Tile {
@@ -16,15 +17,6 @@ const solution1 = (lines: string[]) => {
       current.push(line)
     }
   })
-
-  const tiles: Tile[] = rawTiles.map((raw) => {
-    const [idLine, ...other] = raw
-    const data = readGrid(other, (x) => x === "#").data
-    const id = Number(idLine.split(" ")[1].slice(0, -1))
-    return { data, id, rotatedData: data.map((line) => line.map((x) => x)) }
-  })
-
-  const cache = new Map<number, Tile[]>()
 
   const rotate = (input: Tile): Tile => {
     const data: boolean[][] = []
@@ -55,8 +47,6 @@ const solution1 = (lines: string[]) => {
   }
 
   const getTilePermutations = (original: Tile): Tile[] => {
-    if (cache.has(original.id)) return cache.get(original.id)!
-
     const result: Tile[] = []
     let latest = original
     for (let i = 0; i < 4; i++) {
@@ -66,146 +56,81 @@ const solution1 = (lines: string[]) => {
     for (let i = 0; i < 4; i++) {
       result.push((latest = rotate(latest)))
     }
-
-    cache.set(original.id, result)
-
     return result
   }
 
-  const findGrid = (
-    availableTiles: Tile[],
-    found: Record<string, Tile>,
-    toExpand: [number, number],
-    expandRight: boolean,
-  ): Record<string, Tile> | undefined => {
-    console.log(toExpand, availableTiles.length)
-    if (availableTiles.length === 0) {
-      return found
-      /*
-      const maxIdxs = Object.keys(found)
-        .map((key) => key.split(",").map(Number) as [number, number])
-        .reduce(
-          (acc, current) => {
-            if (current[0] > acc[0]) {
-              acc[0] = current[0]
-            }
-            if (current[1] > acc[1]) {
-              acc[1] = current[1]
-            }
-            return acc
-          },
-          [0, 0] as [number, number],
-        )
-      console.log(maxIdxs)
-      console.log(
-        found["0,0"].id *
-          found[[0, maxIdxs[1]].join(",")].id *
-          found[[maxIdxs[0], 0].join(",")].id *
-          availableTiles[0].id,
-      )
-      */
-    }
-
-    if (toExpand[0] === -1) {
-      return availableTiles
-        .map((current) => {
-          const nextAvailable = availableTiles.filter(
-            (x) => x.id !== current.id,
-          )
-          const permutations = getTilePermutations(current)
-          return permutations.map((permutation) => ({
-            permutation,
-            nextAvailable,
-          }))
-        })
-        .flat()
-        .map(({ permutation, nextAvailable }) =>
-          findGrid(nextAvailable, { "0,0": permutation }, [0, 0], true),
-        )
-        .find((x) => x)
-    }
-
-    const currentTile = found[toExpand.join(",")]
-
-    if (expandRight) {
-      const rightId = parseInt(
-        currentTile.data
-          .map((x) => x[9])
-          .map((x) => (x ? "1" : "0"))
-          .join(""),
-        2,
-      )
-      let nextRight: Tile | undefined = undefined
-      availableTiles.find((candidate) => {
-        const candidates = getTilePermutations(candidate)
-        const foundIdx = candidates
-          .map(
-            (x) =>
-              parseInt(
-                x.data
-                  .map((x) => x[0])
-                  .map((x) => (x ? "1" : "0"))
-                  .join(""),
-              ),
-            2,
-          )
-          .indexOf(rightId)
-        if (foundIdx !== -1) {
-          nextRight = candidates[foundIdx]
-          return true
+  const tiles: Map<number, Tile[]> = new Map(
+    rawTiles
+      .map((raw) => {
+        const [idLine, ...other] = raw
+        return {
+          data: readGrid(other, (x) => x === "#").data,
+          id: Number(idLine.split(" ")[1].slice(0, -1)),
         }
       })
+      .map((tile) => [tile.id, getTilePermutations(tile)] as const),
+  )
 
-      const nextAvailableTiles = nextRight
-        ? availableTiles.filter((x) => x.id !== nextRight!.id)
-        : availableTiles
-      const nextFound = nextRight
-        ? { ...found, [[toExpand[0], toExpand[1] + 1].join(",")]: nextRight }
-        : found
+  const topIds = new Map<number, Set<number>>()
+  const bottomIds = new Map<number, Set<number>>()
+  const rightIds = new Map<number, Set<number>>()
+  const leftIds = new Map<number, Set<number>>()
 
-      if (nextFound !== found) return undefined
-      return findGrid(nextAvailableTiles, nextFound, [toExpand[0], 0], false)
-    } else {
-      const bottomId = parseInt(
-        currentTile.data[9].map((x) => (x ? "1" : "0")).join(""),
-        2,
-      )
-      let nextBottom: Tile | undefined = undefined
-      availableTiles.find((candidate) => {
-        const candidates = getTilePermutations(candidate)
-        const foundIdx = candidates
-          .map(
-            (x) => parseInt(x.data[0].map((x) => (x ? "1" : "0")).join("")),
-            2,
-          )
-          .indexOf(bottomId)
-        if (foundIdx !== -1) {
-          nextBottom = candidates[foundIdx]
-          return true
-        }
-      })
+  const rowToId = (row: boolean[]) =>
+    parseInt(row.map((x) => (x ? "1" : "0")).join(""), 2)
 
-      let nextAvailableTiles = nextBottom
-        ? availableTiles.filter((x) => x.id !== nextBottom?.id)
-        : availableTiles
-      let nextFound = nextBottom
-        ? { ...found, [[toExpand[0] + 1, toExpand[1]].join(",")]: nextBottom }
-        : found
+  tiles.forEach((permutations, key) => {
+    permutations.forEach(({ data }) => {
+      const topId = rowToId(data[0])
+      if (!topIds.has(topId)) topIds.set(topId, new Set([key]))
+      else topIds.get(topId)!.add(key)
 
-      if (!nextBottom) return undefined
-      return findGrid(nextAvailableTiles, nextFound, toExpand, true)
-    }
-  }
+      const bottomId = rowToId(data[9])
+      if (!bottomIds.has(bottomId)) bottomIds.set(bottomId, new Set([key]))
+      else bottomIds.get(bottomId)!.add(key)
 
-  // return findGrid(tiles, {}, [-1, -1], false)
-  getTilePermutations(tiles[0]).forEach((permutatiion) => {
-    console.log(
-      permutatiion.data
-        .map((line) => line.map((x) => (x ? "#" : ".")).join(""))
-        .join("\n"),
-    )
-    console.log()
+      const leftId = rowToId(data.map((x) => x[0]))
+      if (!leftIds.has(leftId)) leftIds.set(leftId, new Set([key]))
+      else leftIds.get(leftId)!.add(key)
+
+      const rightId = rowToId(data.map((x) => x[9]))
+      if (!rightIds.has(rightId)) rightIds.set(rightId, new Set([key]))
+      else rightIds.get(rightId)!.add(key)
+    })
   })
+
+  return [...tiles.entries()]
+    .filter(([key, permutations]) => {
+      const isCorner = permutations
+        .map(({ data }) => {
+          const topCandidates = bottomIds.get(rowToId(data[0]))
+          const bottomCandidates = topIds.get(rowToId(data[9]))
+          const leftCandidates = rightIds.get(rowToId(data.map((x) => x[0])))
+          const rightCandidates = leftIds.get(rowToId(data.map((x) => x[9])))
+
+          const nTop = topCandidates
+            ? topCandidates.size - (topCandidates.has(key) ? 1 : 0)
+            : 0
+
+          const nBottom = bottomCandidates
+            ? bottomCandidates.size - (bottomCandidates.has(key) ? 1 : 0)
+            : 0
+
+          const nRight = rightCandidates
+            ? rightCandidates.size - (rightCandidates.has(key) ? 1 : 0)
+            : 0
+
+          const nLeft = leftCandidates
+            ? leftCandidates.size - (leftCandidates.has(key) ? 1 : 0)
+            : 0
+
+          return nTop + nBottom + nRight + nLeft
+        })
+        .reduce((acc, current) => acc && current === 2, true)
+      return isCorner
+    })
+    .map(([key]) => key)
+    .reduce(multiply)
 }
 
 const solution2 = null
