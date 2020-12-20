@@ -1,11 +1,11 @@
 import graphSearch from "./graphSearch"
 
-const graphDistinctSearch = <T extends { id: string }>(
+const graphDistinctSearch = <T extends { id: string } | { id: number }>(
   initialNode: T,
   analizeNode: (node: T) => T[] | true,
   comparator: (a: T, b: T) => number,
 ): T => {
-  const analized = new Set<string>([initialNode.id])
+  const analized = new Set<any>([initialNode.id])
   return graphSearch(
     initialNode,
     (node: T) => {

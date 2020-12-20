@@ -1,3 +1,4 @@
+import graphDistinctSearch from "utils/graphDistinctSearch"
 import { multiply } from "utils/multiply"
 import { readGrid } from "utils/readGrid"
 
@@ -71,35 +72,50 @@ const solution1 = (lines: string[]) => {
       .map((tile) => [tile.id, getTilePermutations(tile)] as const),
   )
 
-  const topIds = new Map<number, Set<number>>()
-  const bottomIds = new Map<number, Set<number>>()
-  const rightIds = new Map<number, Set<number>>()
-  const leftIds = new Map<number, Set<number>>()
+  const topIds = new Map<number, Map<number, number[]>>()
+  const bottomIds = new Map<number, Map<number, number[]>>()
+  const rightIds = new Map<number, Map<number, number[]>>()
+  const leftIds = new Map<number, Map<number, number[]>>()
 
   const rowToId = (row: boolean[]) =>
     parseInt(row.map((x) => (x ? "1" : "0")).join(""), 2)
 
+  const registerId = (
+    collection: Map<number, Map<number, number[]>>,
+    sideId: number,
+    tileId: number,
+    permutationIdx: number,
+  ): void => {
+    if (!collection.has(sideId)) {
+      collection.set(sideId, new Map([[tileId, [permutationIdx]]]))
+      return
+    }
+    const innerMap = collection.get(sideId)!
+    if (!innerMap.has(tileId)) {
+      innerMap.set(tileId, [permutationIdx])
+    } else {
+      innerMap.get(tileId)!.push(permutationIdx)
+    }
+  }
+
   tiles.forEach((permutations, key) => {
-    permutations.forEach(({ data }) => {
+    permutations.forEach((permutation, idx) => {
+      const { data } = permutation
       const topId = rowToId(data[0])
-      if (!topIds.has(topId)) topIds.set(topId, new Set([key]))
-      else topIds.get(topId)!.add(key)
+      registerId(topIds, topId, key, idx)
 
       const bottomId = rowToId(data[9])
-      if (!bottomIds.has(bottomId)) bottomIds.set(bottomId, new Set([key]))
-      else bottomIds.get(bottomId)!.add(key)
+      registerId(bottomIds, bottomId, key, idx)
 
       const leftId = rowToId(data.map((x) => x[0]))
-      if (!leftIds.has(leftId)) leftIds.set(leftId, new Set([key]))
-      else leftIds.get(leftId)!.add(key)
+      registerId(leftIds, leftId, key, idx)
 
       const rightId = rowToId(data.map((x) => x[9]))
-      if (!rightIds.has(rightId)) rightIds.set(rightId, new Set([key]))
-      else rightIds.get(rightId)!.add(key)
+      registerId(rightIds, rightId, key, idx)
     })
   })
 
-  return [...tiles.entries()]
+  const corners = [...tiles.entries()]
     .filter(([key, permutations]) => {
       const isCorner = permutations
         .map(({ data }) => {
@@ -130,7 +146,124 @@ const solution1 = (lines: string[]) => {
       return isCorner
     })
     .map(([key]) => key)
-    .reduce(multiply)
+
+  interface Node {
+    len: number
+    prev: Node | null
+    id: number
+    idx: number
+  }
+
+  let topToBottom = graphDistinctSearch(
+    {
+      len: 0,
+      prev: null,
+      id: -1,
+      idx: -1,
+    } as Node,
+    (current) => {
+      if (current.id !== corners[0] && corners.includes(current.id)) return true
+      if (current.id === -1) {
+        return tiles.get(corners[0])!.map((tile, idx) => ({
+          id: tile.id,
+          prev: null,
+          len: 1,
+          idx,
+        }))
+      }
+      const result: Node[] = []
+      const { data } = tiles.get(current.id)![current.idx]
+      const bottomId = rowToId(data[9])
+      const candidates = topIds.get(bottomId)
+      if (candidates === undefined) return []
+      candidates.forEach((idxs, tileId) => {
+        if (tileId === current.id) return
+        result.push(
+          ...idxs.map((idx) => ({
+            len: current.len + 1,
+            prev: current,
+            id: tileId,
+            idx,
+          })),
+        )
+      })
+
+      return result
+    },
+    (a, b) => a.len - b.len,
+  )
+
+  const puzzle: Tile[][] = []
+
+  for (let i = 0; i < 12; i++) {
+    const root: Node = {
+      len: 1,
+      id: topToBottom.id,
+      idx: topToBottom.idx,
+      prev: null,
+    }
+    let row: Node | null = graphDistinctSearch(
+      root,
+      (current) => {
+        if (current.len === 12) return true
+        const result: Node[] = []
+        const { data } = tiles.get(current.id)![current.idx]
+        const rightId = rowToId(data.map((x) => x[9]))
+        const candidates = leftIds.get(rightId)
+        if (candidates === undefined) return []
+        candidates.forEach((idxs, tileId) => {
+          if (tileId === current.id) return
+          result.push(
+            ...idxs.map((idx) => ({
+              len: current.len + 1,
+              prev: current,
+              id: tileId,
+              idx,
+            })),
+          )
+        })
+
+        return result
+      },
+      (a, b) => a.len - b.len,
+    )
+    const puzzleRow: Tile[] = []
+    do {
+      puzzleRow.push(tiles.get(row.id)![row.idx])
+      row = row.prev
+    } while (row)
+    puzzleRow.reverse()
+    puzzle.push(puzzleRow)
+    topToBottom = topToBottom.prev!
+  }
+  puzzle.reverse()
+
+  const tempPuzzle = puzzle.map((tilesRow) =>
+    tilesRow.map((tile) =>
+      tile.data
+        .slice(1)
+        .slice(0, -1)
+        .map((x) => x.slice(1).slice(0, -1)),
+    ),
+  )
+
+  const finalPuzzle: boolean[][] = Array(96)
+    .fill(null)
+    .map(() => Array(96).fill(false))
+
+  for (let y = 0; y < 96; y++) {
+    for (let x = 0; x < 96; x++) {
+      const tileY = Math.floor(y / 8)
+      const yy = y % 8
+      const tileX = Math.floor(x / 8)
+      const xx = x % 8
+      finalPuzzle[y][x] = tempPuzzle[tileY][tileX][yy][xx]
+    }
+  }
+
+  return finalPuzzle
+
+  // return corners.reduce(multiply)
 }
 
 const solution2 = null
