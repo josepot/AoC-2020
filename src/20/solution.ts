@@ -19,41 +19,41 @@ const solution1 = (lines: string[]) => {
     }
   })
 
-  const rotate = (input: Tile): Tile => {
+  const rotate = (input: boolean[][]): boolean[][] => {
     const data: boolean[][] = []
     let nextData: boolean[] = []
 
-    for (let x = 0; x < 10; x++) {
-      for (let y = 9; y >= 0; y--) {
-        nextData.push(input.data[y][x])
+    for (let x = 0; x < input.length; x++) {
+      for (let y = input.length - 1; y >= 0; y--) {
+        nextData.push(input[y][x])
       }
       data.push(nextData)
       nextData = []
     }
-    return { ...input, data }
+    return data
   }
 
-  const flipV = (input: Tile): Tile => {
+  const flipV = (input: boolean[][]): boolean[][] => {
     const data: boolean[][] = []
     let nextData: boolean[] = []
 
-    for (let y = 0; y < 10; y++) {
-      for (let x = 0; x < 10; x++) {
-        nextData.push(input.data[y][x])
+    for (let y = 0; y < input.length; y++) {
+      for (let x = 0; x < input.length; x++) {
+        nextData.push(input[y][x])
       }
       data.push(nextData)
       nextData = []
     }
-    return { ...input, data: data.reverse() }
+    return data.reverse()
   }
 
-  const getTilePermutations = (original: Tile): Tile[] => {
-    const result: Tile[] = []
-    let latest = original
+  const getPermutations = (input: boolean[][]): boolean[][][] => {
+    const result: boolean[][][] = []
+    let latest = input
     for (let i = 0; i < 4; i++) {
       result.push((latest = rotate(latest)))
     }
-    latest = flipV(original)
+    latest = flipV(input)
     for (let i = 0; i < 4; i++) {
       result.push((latest = rotate(latest)))
     }
@@ -69,7 +69,16 @@ const solution1 = (lines: string[]) => {
           id: Number(idLine.split(" ")[1].slice(0, -1)),
         }
       })
-      .map((tile) => [tile.id, getTilePermutations(tile)] as const),
+      .map(
+        (tile) =>
+          [
+            tile.id,
+            getPermutations(tile.data).map((data) => ({
+              id: tile.id,
+              data,
+            })),
+          ] as const,
+      ),
   )
 
   const topIds = new Map<number, Map<number, number[]>>()
@@ -261,9 +270,40 @@ const solution1 = (lines: string[]) => {
     }
   }
 
-  return finalPuzzle
+  const seeMonsterDiffs = `
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   
+`
+    .split("\n")
+    .slice(1)
+    .map((line, yIdx) =>
+      line
+        .split("")
+        .map((value, xIdx) => [value, xIdx] as const)
+        .filter(([value]) => value === "#")
+        .map(([_, xIdx]) => [yIdx, xIdx] as const),
+    )
+    .flat()
 
-  // return corners.reduce(multiply)
+  const isThereSeeMonster = (
+    puzzle: boolean[][],
+    [y, x]: [number, number],
+  ): boolean =>
+    seeMonsterDiffs.every(
+      ([yDiff, xDiff]) => puzzle[y + yDiff] && puzzle[y + yDiff][x + xDiff],
+    )
+
+  return getPermutations(finalPuzzle)
+    .map((p) => {
+      const nMonsters = p
+        .map((_, y) => _.map((_, x) => isThereSeeMonster(p, [y, x])))
+        .flat()
+        .filter((x) => x).length
+      const takenSquares = nMonsters * seeMonsterDiffs.length
+      return p.flat().filter((x) => x).length - takenSquares
+    })
+    .sort((a, b) => a - b)[0]
 }
 
 const solution2 = null
