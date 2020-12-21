@@ -18,41 +18,84 @@ const parseLine = (input: string): [string[], string[]] => {
 
 const solution1 = (lines: string[]) => {
   const input = lines.map(parseLine)
-  const allAllergents = new Set<string>()
   const allIngredients = new Set<string>()
-  const ingredientCounts = new Map<string, number>()
+  const countByIngredient = new Map<string, number>()
+  const ingredientsByAllergen = new Map<string, Set<string>>()
 
-  input.forEach(([ingredients, allergies]) => {
+  input.forEach(([ingredients, alergens]) => {
     ingredients.forEach((ingredient) => {
       allIngredients.add(ingredient)
-      if (ingredientCounts.has(ingredient))
-        ingredientCounts.set(ingredient, ingredientCounts.get(ingredient)! + 1)
-      else ingredientCounts.set(ingredient, 1)
+      countByIngredient.set(
+        ingredient,
+        (countByIngredient.get(ingredient) ?? 0) + 1,
+      )
     })
-    allergies.forEach((a) => allAllergents.add(a))
+
+    alergens.forEach((alergen) => {
+      ingredientsByAllergen.set(
+        alergen,
+        new Set(
+          ingredients.filter(
+            (ingredient) =>
+              ingredientsByAllergen.get(alergen)?.has(ingredient) ?? true,
+          ),
+        ),
+      )
+    })
   })
 
-  const possible = new Map<string, Set<string>>()
-  allAllergents.forEach((a) => possible.set(a, new Set([...allIngredients])))
+  const poisonedIngredients = new Set(
+    [...ingredientsByAllergen.values()]
+      .map((ingredients) => [...ingredients])
+      .flat(),
+  )
+  const safeIngredients = new Set(allIngredients)
+  poisonedIngredients.forEach((poisonedIngredient) =>
+    safeIngredients.delete(poisonedIngredient),
+  )
 
-  input.forEach(([ingredients_, allergies_]) => {
-    allergies_.forEach((allergy) => {
-      ;[...allIngredients].forEach((ingredient) => {
-        if (!ingredients_.includes(ingredient))
-          possible.get(allergy)!.delete(ingredient)
-      })
-    })
-  })
-
-  return [...allIngredients]
-    .map((ingr) =>
-      [...possible.values()].some((poss) => poss.has(ingr))
-        ? 0
-        : ingredientCounts.get(ingr)!,
-    )
+  return [...safeIngredients]
+    .map((ingredient) => countByIngredient.get(ingredient)!)
     .reduce(add)
 }
 
-const solution2 = null
+const solution2 = (lines: string[]) => {
+  const input = lines.map(parseLine)
+  const ingredientsByAllergen = new Map<string, Set<string>>()
 
-export default [solution1, solution2].filter(Boolean)
+  input.forEach(([ingredients, alergens]) => {
+    alergens.forEach((alergen) => {
+      ingredientsByAllergen.set(
+        alergen,
+        new Set(
+          ingredients.filter(
+            (ingredient) =>
+              ingredientsByAllergen.get(alergen)?.has(ingredient) ?? true,
+          ),
+        ),
+      )
+    })
+  })
+
+  const ingredientByAllergen = new Map<string, string>()
+  do {
+    const [allergent, ingredientSet] = [
+      ...ingredientsByAllergen.entries(),
+    ].find(([, ingredients]) => ingredients.size === 1)!
+
+    const [ingredient] = [...ingredientSet]
+    ingredientByAllergen.set(allergent, ingredient)
+
+    ingredientsByAllergen.delete(allergent)
+    ingredientsByAllergen.forEach((ingredients) =>
+      ingredients.delete(ingredient),
+    )
+  } while (ingredientsByAllergen.size > 0)
+
+  return [...ingredientByAllergen.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, ingredient]) => ingredient)
+    .join()
+}
+
+export default [solution1, solution2]
