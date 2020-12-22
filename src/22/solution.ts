@@ -1,16 +1,21 @@
 import add from "utils/add"
 import Queue from "utils/Queue"
 
+const getScore = (input: Queue<number>): number => {
+  const values: number[] = []
+  while (input.peek() !== undefined) {
+    values.push(input.pop()!)
+  }
+  return values
+    .reverse()
+    .map((val, idx) => val * (idx + 1))
+    .reduce(add)
+}
+
 const solution1 = (lines: string[]) => {
   const splitIdx = lines.indexOf("")
-  const player1Raw = lines.slice(0, splitIdx).slice(1).map(Number)
-  const player2Raw = lines
-    .slice(splitIdx + 1)
-    .slice(1)
-    .map(Number)
-
-  const player1 = new Queue(...player1Raw)
-  const player2 = new Queue(...player2Raw)
+  const player1 = new Queue(...lines.slice(1, splitIdx).map(Number))
+  const player2 = new Queue(...lines.slice(splitIdx + 2).map(Number))
 
   do {
     if (player1.peek()! >= player2.peek()!) {
@@ -23,36 +28,25 @@ const solution1 = (lines: string[]) => {
   } while (player1.peek() !== undefined && player2.peek() !== undefined)
 
   const winner = player1.peek() === undefined ? player2 : player1
-  const values: number[] = []
-
-  while (winner.peek() !== undefined) {
-    values.push(winner.pop()!)
-  }
-  return values
-    .reverse()
-    .map((val, idx) => val * (idx + 1))
-    .reduce(add)
+  return getScore(winner)
 }
 
 const getId = (deck: Queue<number>) => {
   const result: number[] = []
-  while (deck.peek() !== undefined) {
-    result.push(deck.pop()!)
+  for (let i = 0; i < deck.size(); i++) {
+    result.push(deck.peek()!)
+    deck.push(deck.pop()!)
   }
-  result.forEach((val) => deck.push(val))
   return result.join(",")
 }
 
 const copy = (queue: Queue<number>, len: number): Queue<number> => {
   const result = new Queue<number>()
-  const diff = queue.size() - len
   for (let i = 0; i < len; i++) {
     result.push(queue.peek()!)
     queue.push(queue.pop()!)
   }
-  for (let i = 0; i < diff; i++) {
-    queue.push(queue.pop()!)
-  }
+  for (let i = 0; i < queue.size() - len; i++) queue.push(queue.pop()!)
   return result
 }
 
@@ -67,15 +61,9 @@ const game = (
     const player1Id = getId(player1)
     const player2Id = getId(player2)
 
-    if (prevDecks1.has(player1Id) || prevDecks2.has(player2Id)) {
-      return player1
-    }
-    if (player1.size() === 0) {
-      return player2
-    }
-    if (player2.size() === 0) {
-      return player1
-    }
+    if (prevDecks1.has(player1Id) || prevDecks2.has(player2Id)) return player1
+    if (player1.size() === 0) return player2
+    if (player2.size() === 0) return player1
 
     prevDecks1.add(player1Id)
     prevDecks2.add(player2Id)
@@ -108,25 +96,10 @@ const game = (
 
 const solution2 = (lines: string[]) => {
   const splitIdx = lines.indexOf("")
-  const player1Raw = lines.slice(0, splitIdx).slice(1).map(Number)
-  const player2Raw = lines
-    .slice(splitIdx + 1)
-    .slice(1)
-    .map(Number)
-
-  const player1 = new Queue(...player1Raw)
-  const player2 = new Queue(...player2Raw)
-  const winner = game(player1, player2)
-
-  const values: number[] = []
-
-  while (winner.peek() !== undefined) {
-    values.push(winner.pop()!)
-  }
-  return values
-    .reverse()
-    .map((val, idx) => val * (idx + 1))
-    .reduce(add)
+  const player1 = new Queue(...lines.slice(1, splitIdx).map(Number))
+  const player2 = new Queue(...lines.slice(splitIdx + 2).map(Number))
+  const winnner = game(player1, player2)
+  return getScore(winnner)
 }
 
 export default [solution1, solution2].filter(Boolean)
