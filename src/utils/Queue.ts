@@ -6,8 +6,10 @@ interface QueueNode<T> {
 export default class Queue<T> {
   private first?: QueueNode<T>
   private last?: QueueNode<T>
+  private count: number
 
   constructor(...vals: T[]) {
+    this.count = 0
     if (vals.length === 0) return
     vals.forEach((val) => this.push(val))
   }
@@ -22,6 +24,7 @@ export default class Queue<T> {
         this.last.next = nextLast
         this.last = nextLast
       }
+      this.count++
     })
   }
 
@@ -33,7 +36,12 @@ export default class Queue<T> {
         this.last = undefined
       }
     }
+    this.count--
     return result
+  }
+
+  size() {
+    return this.count
   }
 
   peek() {
