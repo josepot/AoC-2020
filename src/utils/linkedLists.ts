@@ -7,7 +7,7 @@ export interface LinkedListNode<T> {
   value: T
   next?: LinkedListNode<T>
 }
-interface CircularLinkedListNode<T> {
+export interface CircularLinkedListNode<T> {
   value: T
   next: CircularLinkedListNode<T>
 }
