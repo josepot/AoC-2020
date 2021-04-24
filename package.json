@@ -11,12 +11,15 @@
   "license": "MIT",
   "dependencies": {
     "big-integer": "^1.6.48",
+    "express": "^4.17.1",
     "id-permutations": "^1.0.6",
     "md5": "^2.2.1",
     "priorityqueuejs": "^2.0.0",
-    "rxjs": "^6.5.4"
+    "rxjs": "^6.5.4",
+    "simple-git": "^2.37.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.11",
     "@types/priorityqueuejs": "^1.0.1",
     "@typescript-eslint/eslint-plugin": "^4.6.1",
     "@typescript-eslint/parser": "^4.6.1",
